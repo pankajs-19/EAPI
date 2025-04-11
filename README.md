@@ -65,7 +65,7 @@ A low-cost, scalable, and efficient real-time early disaster detection and warni
 
 ## Directory Structure
 
-. ├── firmware/ │ └── NodeMCU_sensor_transmission.ino ├── server/ │ ├── main.py # FastAPI Server │ ├── model.pkl # ML Model │ └── templates/ │ └── dashboard.html # Web UI ├── data/ │ └── weatherHistory.csv # Historical rainfall data ├── README.md └── requirements.txt
+EAPI/ ├── firmware/ │ └── NodeMCU_sensor_transmission.ino # Arduino code for NodeMCU ├── server/ │ ├── main.py # FastAPI server code │ ├── model.pkl # Trained ML model for flood prediction │ └── templates/ │ └── dashboard.html # Web UI for real-time data ├── data/ │ └── weatherHistory.csv # Historical rainfall data for training ├── requirements.txt # Python dependencies └── README.md
 
 
 ## Results
