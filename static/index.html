@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earthquake and Flood Early Warning System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold text-center mb-6">Earthquake and Flood Early Warning System</h1>
+
+    <!-- Prediction Banner -->
+    <div id="predictionBanner" class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+      <p class="font-bold">Early Flood Prediction:</p>
+      <p id="predictionText">Loading...</p> 
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Orientation Angles Plot for /imu-data -->
+      <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Ground Motion (Device 1)</h2>
+        <p id="magnitudeText" class="text-left text-gray-700 font-semibold mb-2"></p>
+        <p id="warningText" class="text-left text-gray-700 font-semibold mb-2"></p>
+        <canvas id="orientationChart"></canvas>
+      </div>
+
+      <!-- Orientation Angles Plot for /imu-data2 -->
+      <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Ground Motion (Device 2)</h2>
+        <p id="magnitudeText2" class="text-left text-gray-700 font-semibold mb-2"></p>
+        <p id="warningText2" class="text-left text-gray-700 font-semibold mb-2"></p>
+        <canvas id="orientationChart2"></canvas>
+      </div>
+    </div>
+
+    <!-- Weather Data Table -->
+    <div class="bg-white p-6 rounded-lg shadow mt-6">
+      <h2 class="text-xl font-semibold mb-4 text-center">Weather Data</h2>
+      <table class="min-w-full bg-white border border-gray-200">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="py-2 px-4 border-b">Parameter</th>
+            <th class="py-2 px-4 border-b">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="py-2 px-4 border-b text-center">Date (YYYY/MM/DD)</td>
+            <td class="py-2 px-4 border-b text-center" id="weatherDate">Loading...</td>
+          </tr>
+          <tr>
+            <td class="py-2 px-4 border-b text-center">Max Temperature</td>
+            <td class="py-2 px-4 border-b text-center" id="maxTemp">Loading...</td>
+          </tr>
+          <tr>
+            <td class="py-2 px-4 border-b text-center">Min Temperature</td>
+            <td class="py-2 px-4 border-b text-center" id="minTemp">Loading...</td>
+          </tr>
+          <tr>
+            <td class="py-2 px-4 border-b text-center">Average Temperature</td>
+            <td class="py-2 px-4 border-b text-center" id="avgTemp">Loading...</td>
+          </tr>
+          <tr>
+            <td class="py-2 px-4 border-b text-center">Precipitation</td>
+            <td class="py-2 px-4 border-b text-center" id="precipitation">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const MAX_DATA_POINTS = 50;
+    let orientationChart, orientationChart2;
+
+    const ctx1 = document.getElementById('orientationChart').getContext('2d');
+    orientationChart = new Chart(ctx1, {
+      type: 'line',
+      data: { labels: [], datasets: [
+        { label: 'X', data: [], borderColor: 'red', fill: false },
+        { label: 'Y', data: [], borderColor: 'blue', fill: false },
+        { label: 'Z', data: [], borderColor: 'green', fill: false }
+      ]},
+      options: { scales: { x: { title: { display: true, text: 'Time' } }, y: { title: { display: true, text: 'Value' } } } }
+    });
+
+    const ctx2 = document.getElementById('orientationChart2').getContext('2d');
+    orientationChart2 = new Chart(ctx2, {
+      type: 'line',
+      data: { labels: [], datasets: [
+        { label: 'X', data: [], borderColor: 'red', fill: false },
+        { label: 'Y', data: [], borderColor: 'blue', fill: false },
+        { label: 'Z', data: [], borderColor: 'green', fill: false }
+      ]},
+      options: { scales: { x: { title: { display: true, text: 'Time' } }, y: { title: { display: true, text: 'Value' } } } }
+    });
+
+    async function fetchWeatherData() {
+      try {
+        const response = await fetch('/weather');
+        const weatherData = await response.json();
+
+        document.getElementById('weatherDate').innerText = weatherData.date;
+        document.getElementById('maxTemp').innerText = `${weatherData.temp_max}°C`;
+        document.getElementById('minTemp').innerText = `${weatherData.temp_min}°C`;
+        document.getElementById('avgTemp').innerText = `${parseFloat(weatherData.temp_avg).toFixed(2)}°C`;
+        document.getElementById('precipitation').innerText = `${weatherData.precipitation} cm`;
+
+        const predictionResponse = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tempAvg: weatherData.temp_avg,
+            tempMin: weatherData.temp_min,
+            tempMax: weatherData.temp_max,
+            prcp: weatherData.precipitation,
+            predictDate: weatherData.date,
+          }),
+        });
+
+        const prediction = await predictionResponse.json();
+        document.getElementById('predictionText').innerText = prediction.prediction;
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+      }
+    }
+
+    async function fetchIMUData(endpoint, chart) {
+      try {
+        const response = await fetch(endpoint);
+        const imuData = await response.json();
+        const time = new Date().toLocaleTimeString();
+
+        chart.data.labels.push(time);
+        chart.data.datasets[0].data.push(imuData.x);
+        chart.data.datasets[1].data.push(imuData.y);
+        chart.data.datasets[2].data.push(imuData.z);
+
+        if (chart.data.labels.length > MAX_DATA_POINTS) {
+          chart.data.labels.shift();
+          chart.data.datasets.forEach(dataset => dataset.data.shift());
+        }
+
+        chart.update();
+
+        if (endpoint === '/imu-data') {
+          document.getElementById('magnitudeText').innerText = `Magnitude: ${imuData.magnitude.toFixed(2)}`;
+          document.getElementById('warningText').innerText = `Warning: ${imuData.warning}`;
+        }
+        if (endpoint === '/imu-data2') {
+          document.getElementById('magnitudeText2').innerText = `Magnitude: ${imuData.magnitude.toFixed(2)}`;
+          document.getElementById('warningText2').innerText = `Warning: ${imuData.warning}`;
+        }
+      } catch (error) {
+        console.error(`Error fetching data from ${endpoint}:`, error);
+      }
+    }
+
+    setInterval(() => fetchIMUData('/imu-data', orientationChart), 3000);
+    setInterval(() => fetchIMUData('/imu-data2', orientationChart2), 3000);
+
+    fetchWeatherData();
+  </script>
+</body>
+</html>
