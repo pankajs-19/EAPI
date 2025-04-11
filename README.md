@@ -65,3 +65,26 @@ A low-cost, scalable, and efficient real-time early disaster detection and warni
 
 ## Directory Structure
 
+. ├── firmware/ │ └── NodeMCU_sensor_transmission.ino ├── server/ │ ├── main.py # FastAPI Server │ ├── model.pkl # ML Model │ └── templates/ │ └── dashboard.html # Web UI ├── data/ │ └── weatherHistory.csv # Historical rainfall data ├── README.md └── requirements.txt
+
+
+## Results
+
+- Accurate earthquake detection using low-cost IMUs
+- Flood prediction model provided better insights than threshold-based methods
+- SMS alerts successfully sent in no-internet conditions
+- Real-time monitoring achieved with low latency
+
+## Future Enhancements
+
+- Replace MPU6050 with geophone sensors for better seismic accuracy
+- Integrate solar power for long-term outdoor deployment
+- Add inter-node communication for better redundancy
+
+## Authors
+
+- S. Pankaj  
+- K. Ragavan  
+
+**Project Guide:** Dr. Muthulakshmi S  
+School of Electronics Engineering, VIT University, Chennai
